@@ -1,8 +1,7 @@
 package com.brandon.kotlinpractices.kiosk.consts
 
 
-import com.brandon.kotlinpractices.kiosk.Product
-import com.brandon.kotlinpractices.kiosk.burgers.Burger
+import com.brandon.kotlinpractices.kiosk.product.Product
 import com.brandon.kotlinpractices.kiosk.burgers.Cheeseburger
 import com.brandon.kotlinpractices.kiosk.burgers.Hamburger
 import com.brandon.kotlinpractices.kiosk.burgers.ShackBurger

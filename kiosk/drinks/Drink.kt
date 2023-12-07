@@ -1,6 +1,6 @@
 package com.brandon.kotlinpractices.kiosk.drinks
 
-import com.brandon.kotlinpractices.kiosk.Product
+import com.brandon.kotlinpractices.kiosk.product.Product
 
 abstract class Drink(name: String, price: Double) : Product(name, price){
     abstract override fun getProductName(): String

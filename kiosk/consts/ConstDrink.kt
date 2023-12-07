@@ -1,9 +1,8 @@
 package com.brandon.kotlinpractices.kiosk.consts
 
 
-import com.brandon.kotlinpractices.kiosk.Product
+import com.brandon.kotlinpractices.kiosk.product.Product
 import com.brandon.kotlinpractices.kiosk.drinks.CocaCola
-import com.brandon.kotlinpractices.kiosk.drinks.Drink
 import com.brandon.kotlinpractices.kiosk.drinks.OrangeJuice
 import com.brandon.kotlinpractices.kiosk.drinks.Water
 

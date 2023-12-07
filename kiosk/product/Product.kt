@@ -1,4 +1,4 @@
-package com.brandon.kotlinpractices.kiosk
+package com.brandon.kotlinpractices.kiosk.product
 
 abstract class Product(name: String, price: Double) {
     abstract fun getProductName(): String

@@ -1,5 +1,6 @@
-package com.brandon.kotlinpractices.kiosk
+package com.brandon.kotlinpractices.kiosk.user
 
+import com.brandon.kotlinpractices.kiosk.product.Product
 import kotlin.random.Random
 
 class User(){
