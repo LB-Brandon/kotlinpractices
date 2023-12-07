@@ -186,6 +186,8 @@ fun moveToOrderMenu(user: User) {
             // 쿠폰 있을 시 할인
             if (user.coupon){
                 temp -= 2.0
+                user.coupon = false
+                println("\n쿠폰을 적용하여 2불 할인 되었습니다.")
             }
             if (temp >= 0) {
                 printProgressBar(3)
