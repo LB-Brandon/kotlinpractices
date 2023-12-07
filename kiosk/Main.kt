@@ -1,60 +1,136 @@
 package com.brandon.kotlinpractices.kiosk
 
 import com.brandon.kotlinpractices.kiosk.consts.ConstBurger.burgers
+import com.brandon.kotlinpractices.kiosk.consts.ConstDelivery.deliveryList
 import com.brandon.kotlinpractices.kiosk.consts.ConstDrink.drinks
 import com.brandon.kotlinpractices.kiosk.consts.ConstUser.user
+import com.brandon.kotlinpractices.kiosk.delivery.Delivery
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.random.Random
 
+lateinit var timer: Timer
+lateinit var thread: Thread
 
 fun main() {
     // 유저 정보 (잔액: 랜덤)
     user
+    Thread.sleep(3000)
 
+    // 배달 주문 생성 (매 10초)
+     makeTimer()
     while (true) {
         printMainMenu()
         when (readIntCommand()) {
             0    -> {   // exit
                 println("프로그램이 종료됩니다..")
+                // 주문 대기순 제공 알림 종료
+                if(::timer.isInitialized){
+                    timer.cancel()
+                }
+                if(::thread.isInitialized){
+                    thread.interrupt()
+                    thread.join()  // timer 종료 대기
+                }
                 break
             }
 
             1    -> {
                 moveToBurgerMenu(burgers)
+                Thread.sleep(3000)
             }
 
             2    -> {
                 moveToFrozenCustardMenu()
+                Thread.sleep(3000)
             }
 
             3    -> {
                 moveToDrinkMenu(drinks)
+                Thread.sleep(3000)
             }
 
             4    -> {
                 moveToBeerMenu()
+                Thread.sleep(3000)
             }
 
             5    -> {
                 moveToOrderMenu(user)
+                Thread.sleep(3000)
             }
 
             6    -> {
                 moveToCancelMenu()
+                Thread.sleep(3000)
             }
 
             7 -> {
-//                moveToEventMenu()
+                moveToEventMenu()
+                Thread.sleep(3000)
             }
             8 -> {
-//                moveToDeliveryOrderMenu()
+                moveToDeliveryOrderMenu()
+                Thread.sleep(3000)
             }
 
             else -> println("잘못된 입력입니다.(0~6)\n")
         }
 
     }
+}
+
+fun moveToDeliveryOrderMenu() {
+    if (deliveryList.isNotEmpty()){
+        println("\n배달주문 내역입니다.")
+        for ((i, delivery) in deliveryList.withIndex()){
+            println("${i+1}. ${delivery.getDeliveryInfo(delivery)}")
+        }
+    }else{
+        println("\n현재 배달 주문이 없습니다.")
+    }
+}
+
+fun moveToEventMenu() {
+    println("\n이벤트 쿠폰이 발급되었습니다. (10불 이상 결제시 2불 할인)")
+    user.coupon = true
+}
+
+fun makeTimer() {
+    timer = Timer()
+
+    val task = object : TimerTask() {
+        override fun run() {
+            // 반복 실행 코드, 배달 주문 생성
+            val product = getRandomProduct()
+            val name = product.getProductName()
+            val price = product.getProductPrice()
+            val latitude = Random.nextDouble(-90.0, 90.0) // 위도
+            val longitude = Random.nextDouble(-180.0, 180.0)  // 경도
+
+            // 랜덤 생성 배달 주문 추가
+            deliveryList.add(Delivery(name, price, latitude, longitude))
+        }
+
+        private fun getRandomProduct(): Product {
+            // 버거, 커스타드, 음료, 맥주
+            return when(Random.nextInt(0, 4)){
+                0 -> burgers.random() // 버거
+                1 -> drinks.random() // 커스타드
+                3 -> burgers.random() // 음료
+                4 -> drinks.random() // 맥주
+                else -> burgers.random()
+            }
+        }
+    }
+
+    thread = Thread {
+        timer.scheduleAtFixedRate(task, 10000, 10000)
+    }
+
+    thread.start()
 }
 
 
@@ -71,7 +147,7 @@ fun readIntCommand(): Int {
 
 fun moveToBurgerMenu(burgers: List<Product>) {
     printProductMenu(burgers)
-    purchaseProduct(burgers)
+    addProductToCart(burgers)
 }
 
 fun moveToFrozenCustardMenu() {
@@ -80,7 +156,7 @@ fun moveToFrozenCustardMenu() {
 
 fun moveToDrinkMenu(drinks: List<Product>) {
     printProductMenu(drinks)
-    purchaseProduct(drinks)
+    addProductToCart(drinks)
 }
 
 fun moveToBeerMenu() {
@@ -89,46 +165,48 @@ fun moveToBeerMenu() {
 
 fun moveToOrderMenu(user: User) {
 
-    while (true) {
-        var total: Double = 0.0
+    var total: Double = 0.0
 
-        println("아래와 같이 주문 하시겠습니까?")
-        println("[  Order  ]")
-        for (product in user.cart) {
-            println(product.getProductInfo())
-            total += product.getProductPrice()
-        }
-        println("\n[  Total  ]")
-        println(String.format("W %.1f", total))
+    println("\n아래와 같이 주문 하시겠습니까?")
+    println("[  Order  ]")
+    for (product in user.cart) {
+        println(product.getProductInfo())
+        total += product.getProductPrice()
+    }
+    println("\n[  Total  ]")
+    println(String.format("W %.1f", total))
 
-        println("1. 주문    2. 메뉴판")
-        when (readIntCommand()) {
-            1    -> {
-                if (isServiceAvailableNow().not()) return
-                val temp = user.balance - total
-                if (temp >= 0) {
-                    printProgressBar(3)
-                    println(String.format("구매하였습니다. 잔액은 %.1f 입니다.\n", temp))
-                    user.balance = temp
-                    user.cart.clear()
-                } else {
-                    println(
-                        String.format(
-                            "구매총액은 %.1fW입니다. 현재 잔액은 %.1f 으로 %.1fW 만큼 잔액이 부족합니다.\n",
-                            total,
-                            user.balance,
-                            temp
-                        )
+    println("1. 주문    2. 뒤로가기")
+    when (readIntCommand()) {
+        1    -> {
+            if (isServiceAvailableNow().not()) return
+            var temp = user.balance - total
+            // 쿠폰 있을 시 할인
+            if (user.coupon){
+                temp -= 2.0
+            }
+            if (temp >= 0) {
+                printProgressBar(3)
+                println(String.format("구매하였습니다. 잔액은 %.1f 입니다.", temp))
+                user.balance = temp
+                user.cart.clear()
+            } else {
+                println(
+                    String.format(
+                        "구매총액은 %.1fW입니다. 현재 잔액은 %.1f 으로 %.1fW 만큼 잔액이 부족합니다.\n",
+                        total,
+                        user.balance,
+                        temp
                     )
-                }
+                )
             }
-
-            2    -> {
-                return
-            }
-
-            else -> println("잘못된 입력입니다.(1~2)\n")
         }
+
+        2    -> {
+            return
+        }
+
+        else -> println("잘못된 입력입니다.(1~2)\n")
     }
 
 }
@@ -148,7 +226,7 @@ fun printProgressBar(seconds: Int) {
     }
 
 
-    println("결제가 진행중입니다.")
+    println("\n결제가 진행중입니다.")
     val totalSteps = seconds * 10
     for (currentStep in 1..totalSteps) {
         makeProgressBar(currentStep, totalSteps)
@@ -204,7 +282,7 @@ fun getCurrentTime(): String {
 }
 
 
-private fun purchaseProduct(products: List<Product>) {
+private fun addProductToCart(products: List<Product>) {
     while (true) {
         val command = readIntCommand()
         if (command == 0) return // back to Main Menu
@@ -215,10 +293,10 @@ private fun purchaseProduct(products: List<Product>) {
                 println("1. 확인    2. 취소")
                 if (readIntCommand() == 1) {    // 확인
                     user.cart.add(product)
-                    println("${product.getProductName()} 가 장바구니에 추가되었습니다.\n\n")
+                    println("\n${product.getProductName()} 가 장바구니에 추가되었습니다.")
                     return
                 } else {    // 취소
-                    println("구매를 취소합니다.\n")
+                    println("\n장바구니 추가를 취소합니다.")
                     printProductMenu(products)
                     break
                 }
@@ -230,7 +308,7 @@ private fun purchaseProduct(products: List<Product>) {
 private fun printProductMenu(products: List<Product>) {
     val productName = products.first().javaClass.superclass.simpleName
 
-    println("[  $productName MENU  ]")
+    println("\n[  $productName MENU  ]")
     for ((i, product) in products.withIndex()) {
         println("${i + 1}. ${product.getProductInfo()}")
     }
@@ -238,7 +316,7 @@ private fun printProductMenu(products: List<Product>) {
 }
 
 private fun printMainMenu() {
-    println("----SHAKESHACK BURGER 에 오신 걸 환영합니다.----")
+    println("\n----SHAKESHACK BURGER 에 오신 걸 환영합니다.----")
     println("아래 메뉴판을 보시고 메뉴를 골라 입력해주세요.\n")
 
     println("[  SHAKESHACK MENU  ]")
@@ -254,5 +332,5 @@ private fun printMainMenu() {
 
     println("\n[  EXTRA MENU  ]")
     println("7. Event          | 일정 금액 이상 구매 시 사용 가능한 쿠폰을 발급합니다.")
-    println("6. Delivery Order | 자동 생성된 배달요청 목록을 확인합니다.")
+    println("8. Delivery Order | 자동 생성된 배달요청 목록을 확인합니다.")
 }
